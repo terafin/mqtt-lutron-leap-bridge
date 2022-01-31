@@ -88,11 +88,11 @@ const lutron = new LutronLeap({ip: bridgeIP, ca: bridgeCA, cert: bridgeCert, key
 
 // MQTT Event Handlers
 var connectedEvent = function() {
-	var topic = topic_prefix + '/+/set'
+	var topic = topic_prefix + '/+/+/+/set'
 	logging.info('Subscribing to topic: ' + topic)
 	client.subscribe(topic, {qos: 1})
 
-	topic = topic_prefix + '/+/press'
+	topic = topic_prefix + '/+/+/+/press'
 	logging.info('Subscribing to topic: ' + topic)
 	client.subscribe(topic, {qos: 1})
 	health.healthyEvent()
@@ -115,15 +115,38 @@ if (_.isNil(client)) {
 client.on('message', (topic, message) => {
 	var components = topic.split('/')
 
-	const deviceId = components[components.length - 2]
-	logging.info(' => topic: ' + topic + '  message: ' + message + ' deviceId: ' + deviceId)
-	if (deviceId != 0) {
-		if (topic.includes('press')) {
-			lutron.sendButtonCommand(deviceId, message)
-		} else {
-			lutron.sendLutronCommand(deviceId, message)
-		}
-	}
+    // topic_prefix/zone/NUMBER/COMMAND = VALUE
+	const scope = components[components.length - 4]
+	const number = components[components.length - 3]
+	const command = components[components.length - 2]
+	logging.info(' => topic: ' + topic + '  message: ' + message + ' scope: ' + scope + ' scope: ' + number + ' scope: ' + command)
+
+    if ( _.isNil(scope) || _.isNil(number) || _.isNil(command) ) {
+        logging.error('malformed MQTT command')
+        return
+    }
+
+    switch (scope) {
+        case 'zone':
+            switch (command) {
+                case 'on_off':
+                    lutron.sendZoneOnOffCommand(number, message == '1' ? true : false)
+                    break;
+            
+                case 'level':
+                    lutron.sendZoneLevelCommand(number, Number(message))
+                    break;
+            
+                default:
+                    logging.error('unhandled command: ' + command)
+                    break;
+            }    
+            break;
+    
+        default:
+            logging.error('unhandled scope: ' + scope)
+            break;
+    }
 })
 
 lutron.lutronEvent.on('zone-status', (update) => {

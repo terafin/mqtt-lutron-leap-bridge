@@ -59,9 +59,13 @@ export class LutronLeap  {
         return true
     }
 
-    async sendOnOffCommand(zone, onOff) {
+    async sendZoneOnOffCommand(zone, onOff) {
+        return this.sendZoneLevelCommand(zone, onOff ? 100 : 0)
+    }
+
+    async sendZoneLevelCommand(zone, level) {
         var response = await leap.request('CreateRequest', '/zone/' + zone + '/commandprocessor', {"Command": {   "CommandType": "GoToLevel", 
-                                                                                    "Parameter": [{"Type":"Level", "Value":onOff ? 100 : 0}]
+                                                                                    "Parameter": [{"Type":"Level", "Value":level}]
                                                                                 }
                                                                     })
        logging.info('command response: ' + JSON.stringify(response))
@@ -132,7 +136,7 @@ export class LutronLeap  {
         // leap.subscribe('/device/status/deviceheard', function(subscribeResponse) {
         //     logging.info('deviceheard response: ' + subscribeResponse)
         // }, 'SubscribeRequest')
-    //    await this.sendOnOffCommand(622, false)
+    //    await this.sendZoneOnOffCommand(622, false)
     //     var response = await leap.request('CreateRequest', '/zone/622/commandprocessor', {"Command": {   "CommandType": "GoToLevel", 
     //                                                                                 "Parameter": [{"Type":"Level", "Value":0}]
     //                                                                             }
