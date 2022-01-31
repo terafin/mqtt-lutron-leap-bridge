@@ -1,0 +1,23 @@
+{
+    "name": "mqtt-lutron-leap-bridge",
+    "version": "0.0.1",
+    "description": "Bridge Lutron LEAP to and from MQTT",
+    "license": "MIT",
+    "main": "mqtt-lutron-leap-bridge.js",
+    "type": "module",
+    "repository": {
+        "url": "https://github.com/terafin/mqtt-lutron-leap-bridge"
+    },
+    "scripts": {
+        "start": "node mqtt-lutron-leap-bridge.js"
+    },
+    "dependencies": {
+        "homeautomation-js-lib": "https://github.com/terafin/homeautomation-js-lib.git",
+        "lodash": "latest",
+        "lutron-leap": "latest",
+        "mqtt": "latest"
+    },
+    "engines": {
+        "node": ">=10.17.0"
+    }
+}
