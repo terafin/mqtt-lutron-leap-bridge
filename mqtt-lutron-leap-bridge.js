@@ -170,7 +170,8 @@ lutron.lutronEvent.on('area-status', (update) => {
     const occupancyStatus = update.OccupancyStatus
     const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'areas', device.toString())
 
-    if ( occupancyStatus != 'Unknown' ) {
+    
+    if ( !_.isNil(occupancyStatus) && occupancyStatus != 'Unknown' ) {
 	    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'occupancy'), occupancyStatus == 'Occupied' ? "1" : "0", mqttOptions)
     }
 })
