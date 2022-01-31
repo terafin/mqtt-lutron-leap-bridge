@@ -16,6 +16,8 @@ const pathToBridgeKey = process.env.BRIDGE_KEY_PATH
 const pathToBridgeCA = process.env.BRIDGE_CA_PATH
 const pathToBridgeCert = process.env.BRIDGE_CERT_PATH
 
+var mqttOptions = { qos: 1, retain: true }
+
 const bridgeIP = process.env.BRIDGE_IP
 var bridgeCA = null
 var bridgeKey = null
@@ -23,7 +25,6 @@ var bridgeCert = null
 
 const host = process.env.MQTT_HOST
 var topic_prefix = process.env.TOPIC_PREFIX
-
 
 
 const loadFileData = function(filePath) {
@@ -125,13 +126,28 @@ client.on('message', (topic, message) => {
 	}
 })
 
-// Lutron observation
-// lutron.lutronEvent.on('data', (data) => {
-// 	const topic = mqtt_helpers.generateTopic(topic_prefix, data.deviceId.toString(), data.action.toString())
-// 	const message = data.param.toString()
-// 	const type = data.type
-// 	var options = {retain: (type == 'OUTPUT' ? true : false), qos: 1}
+lutron.lutronEvent.on('zone-status', (update) => {
+    logging.info('zone-status: ' + JSON.stringify(update))
+    const device = update.device
+    const switchedLevel = update.SwitchedLevel
+    const level = update.Level
+    const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'zones', device.toString())
 
-// 	logging.info(' => publishing topic: ' + topic + '    message: ' + message + '    options: ' + JSON.stringify(options))
-// 	client.smartPublish(topic, message, options)
-// })
+    if ( !_.isNil(switchedLevel) ) {
+	    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'on_off'), switchedLevel == 'On' ? "1" : "0", mqttOptions)
+    }
+    if ( !_.isNil(level) ) {
+	    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'level'), level, mqttOptions)
+    }
+})
+
+lutron.lutronEvent.on('area-status', (update) => {
+    logging.info('area-status: ' + JSON.stringify(update))
+    const device = update.device
+    const occupancyStatus = update.OccupancyStatus
+    const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'areas', device.toString())
+
+    if ( occupancyStatus != 'Unknown' ) {
+	    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'occupancy'), occupancyStatus == 'Occupied' ? "1" : "0", mqttOptions)
+    }
+})
