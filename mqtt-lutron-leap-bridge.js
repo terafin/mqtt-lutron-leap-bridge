@@ -154,7 +154,7 @@ lutron.lutronEvent.on('zone-status', (update) => {
     const device = update.device
     const switchedLevel = update.SwitchedLevel
     const level = update.Level
-    const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'zones', device.toString())
+    const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'zone', device.toString())
 
     if ( !_.isNil(switchedLevel) ) {
 	    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'on_off'), switchedLevel == 'On' ? "1" : "0", mqttOptions)
