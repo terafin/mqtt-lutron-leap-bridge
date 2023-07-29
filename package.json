@@ -14,7 +14,8 @@
     "dependencies": {
         "homeautomation-js-lib": "terafin/homeautomation-js-lib",
         "lodash": "latest",
-        "lutron-leap": "terafin/lutron-leap-js#personal-branch",
+        "lutron-leap": "latest",
+        "interval-promise": "latest",
         "mqtt": "latest"
     },
     "engines": {

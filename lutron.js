@@ -77,6 +77,10 @@ export class LutronLeap  {
         leap.subscribe(path, responseProcessor, 'SubscribeRequest')
     }
     
+    async isConnected() {
+        return connected
+    }
+
     async runTestCommands() {
         // await this.testCommandAndLog('ReadRequest', '/server/1/status/ping')
         // await this.testCommandAndLog('ReadRequest', '/area/24')
@@ -150,6 +154,15 @@ export class LutronLeap  {
         // logging.info('device info: ' + JSON.stringify(deviceInfo))
     }
 
+    async ping() {
+        try {
+            await this.testCommandAndLog('ReadRequest', '/server/1/status/ping')
+        } catch (error) {
+            logging.error('ping failed: ' + error)
+            connected = false
+        }
+    }
+
     async connect() {
         if (connected) {
             return
@@ -159,7 +172,9 @@ export class LutronLeap  {
             const secrets = this.secrets()
             logging.info('Setting up LeapClient to IP: ' + secrets.ip)
             leap = new LeapClient(secrets.ip, 8081, secrets.cert, secrets.key, secrets.ca)
+            
             await leap.connect()
+            connected = true
             logging.info('LEAP client connected')
             bridge = new SmartBridge(secrets.ip, leap);
 
@@ -180,13 +195,20 @@ export class LutronLeap  {
                     emitter.emit('zone-status', result)
                 })
             })
+
+            leap.on('unsolicited', (response) => {
+                emitter.emit('unsolicited: ' + JSON.stringify(response))
+            })
+
+            leap.on('disconnected', () => {
+                emitter.emit('disconnected')
+                connected = false
+            })
+
         } catch (error) {
             logging.error('error: ' + error)
+            connected = false
         }
-    }
-
-    _handleUnsolicited(response) {
-        logging.info('got unsolicited message:' + response)
     }
 
     secrets() {
@@ -198,13 +220,5 @@ export class LutronLeap  {
         }
 
         return params
-    }
-
-    deferredConnect() {
-        logging.info('Deferring connectect')
-        
-        setTimeout(function() {
-            this.connect()
-        }, 10)
     }
 }

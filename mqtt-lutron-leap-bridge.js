@@ -5,6 +5,7 @@ import _ from 'lodash'
 import logging from 'homeautomation-js-lib/logging.js'
 import health from 'homeautomation-js-lib/health.js'
 import mqtt_helpers from 'homeautomation-js-lib/mqtt_helpers.js'
+import interval from 'interval-promise'
 import * as lutronLib from './lutron.js'
 const { LutronLeap } = lutronLib
 import fs from 'fs'
@@ -175,3 +176,26 @@ lutron.lutronEvent.on('area-status', (update) => {
 	    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'occupancy'), occupancyStatus == 'Occupied' ? "1" : "0", mqttOptions)
     }
 })
+
+lutron.lutronEvent.on('unsolicited', (update) => {
+    logging.info('unsolicited: ' + JSON.stringify(update))
+})
+
+
+lutron.lutronEvent.on('disconnected', () => {
+    logging.info('disconnected')
+})
+
+
+interval(async() => {
+    logging.debug('checking connection')
+    await lutron.ping()
+    const connected = await lutron.isConnected()
+
+    if ( !connected ) {
+        logging.info('reconnecting, connection dead')
+        lutron.connect()
+    } else {
+        logging.debug('already connected')
+    }
+}, 1000 * 10)
