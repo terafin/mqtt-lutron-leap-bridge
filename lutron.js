@@ -54,9 +54,14 @@ export class LutronLeap  {
     }
 
     async testCommandAndLog(requestType, URL) {
-        var raw = await leap.request(requestType, URL);
+        var raw = await sendCommand(requestType, URL);
         logging.info('command: ' + URL + '     result: ' + JSON.stringify(raw))
         return true
+    }
+
+    async sendCommand(requestType, URL) {
+        var raw = await leap.request(requestType, URL);
+        return raw
     }
 
     async sendZoneOnOffCommand(zone, onOff) {
@@ -155,12 +160,16 @@ export class LutronLeap  {
     }
 
     async ping() {
+        var success = true
         try {
-            await this.testCommandAndLog('ReadRequest', '/server/1/status/ping')
+            this.sendCommand('ReadRequest', '/server/1/status/ping')
         } catch (error) {
             logging.error('ping failed: ' + error)
             connected = false
+            success = false
         }
+
+        return success
     }
 
     async connect() {
