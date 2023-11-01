@@ -14,26 +14,26 @@ var bridge = null
 
 
 
-const filterResponseArray = function(response, bodyKey, nodeIndex, exclude) {
+const filterResponseArray = function (response, bodyKey, nodeIndex, exclude) {
     var body = response.Body[bodyKey]
     var result = []
 
     body.forEach(item => {
         var newItem = {}
         Object.keys(item).forEach(key => {
-            if ( key == 'href' ) {
+            if (key == 'href') {
                 const components = item[key].trim().split('/')
                 newItem['device'] = components[nodeIndex + 1]
-            } else if ( _.isNil(exclude) ) {
+            } else if (_.isNil(exclude)) {
                 // logging.info('nil exclude, skipping')
                 return;
-            } else if ( exclude.size == 0 ) {
+            } else if (exclude.size == 0) {
                 // logging.info('empty exclude, skipping')
                 return;
-            } else if ( exclude.includes(key) ) {
+            } else if (exclude.includes(key)) {
                 // logging.info('key excluded, skipping')
                 return;
-            } else if ( !_.isNil(item[key]) ) {
+            } else if (!_.isNil(item[key])) {
                 newItem[key] = item[key]
             }
         })
@@ -44,7 +44,7 @@ const filterResponseArray = function(response, bodyKey, nodeIndex, exclude) {
     return result
 }
 
-export class LutronLeap  {
+export class LutronLeap {
 
     constructor(inSecrets) {
         secrets = inSecrets
@@ -69,11 +69,18 @@ export class LutronLeap  {
     }
 
     async sendZoneLevelCommand(zone, level) {
-        var response = await leap.request('CreateRequest', '/zone/' + zone + '/commandprocessor', {"Command": {   "CommandType": "GoToLevel", 
-                                                                                    "Parameter": [{"Type":"Level", "Value":level}]
-                                                                                }
-                                                                    })
-       logging.info('command response: ' + JSON.stringify(response))
+        var response = await leap.request('CreateRequest', '/zone/' + zone + '/commandprocessor', {
+            "Command": {
+                "CommandType": "GoToLevel",
+                "Parameter": [{ "Type": "Level", "Value": level }]
+            }
+        })
+        logging.info('command response: ' + JSON.stringify(response))
+    }
+
+    async read(path, responseProcessor) {
+        const result = await leap.request('ReadRequest', path)
+        responseProcessor(result)
     }
 
     async readAndSubscribe(path, responseProcessor) {
@@ -81,7 +88,7 @@ export class LutronLeap  {
         responseProcessor(result)
         leap.subscribe(path, responseProcessor, 'SubscribeRequest')
     }
-    
+
     async isConnected() {
         return connected
     }
@@ -96,7 +103,7 @@ export class LutronLeap  {
         // await this.testCommandAndLog('ReadRequest', '/device/752') // motion
         // await this.testCommandAndLog('ReadRequest', '/device/752/status') // motions
         // await this.testCommandAndLog('ReadRequest', '/link')
-        // await this.testCommandAndLog('ReadRequest', '/device/status')
+        // await this.testCommandAndLog('ReadRequest', '/devifce/status')
         // await this.testCommandAndLog('ReadRequest', '/area/729') // loft
         // await this.testCommandAndLog('ReadRequest', '/area/24') // loft
         // await this.testCommandAndLog('ReadRequest', '/area/83') // Equuipmnent room
@@ -145,14 +152,14 @@ export class LutronLeap  {
         // leap.subscribe('/device/status/deviceheard', function(subscribeResponse) {
         //     logging.info('deviceheard response: ' + subscribeResponse)
         // }, 'SubscribeRequest')
-    //    await this.sendZoneOnOffCommand(622, false)
-    //     var response = await leap.request('CreateRequest', '/zone/622/commandprocessor', {"Command": {   "CommandType": "GoToLevel", 
-    //                                                                                 "Parameter": [{"Type":"Level", "Value":0}]
-    //                                                                             }
-    //                                                                 })
-    //    logging.info('command response: ' + JSON.stringify(response))
-      
-                                                                            
+        //    await this.sendZoneOnOffCommand(622, false)
+        //     var response = await leap.request('CreateRequest', '/zone/622/commandprocessor', {"Command": {   "CommandType": "GoToLevel", 
+        //                                                                                 "Parameter": [{"Type":"Level", "Value":0}]
+        //                                                                             }
+        //                                                                 })
+        //    logging.info('command response: ' + JSON.stringify(response))
+
+
         // const bridgeInfo = await bridge.getBridgeInfo()
         // logging.info('bridge info: ' + JSON.stringify(bridgeInfo))
         // const deviceInfo = await bridge.getDeviceInfo()
@@ -176,12 +183,12 @@ export class LutronLeap  {
         if (connected) {
             return
         }
-    
+
         try {
             const secrets = this.secrets()
             logging.info('Setting up LeapClient to IP: ' + secrets.ip)
             leap = new LeapClient(secrets.ip, 8081, secrets.cert, secrets.key, secrets.ca)
-            
+
             await leap.connect()
             connected = true
             logging.info('LEAP client connected')
@@ -189,7 +196,7 @@ export class LutronLeap  {
 
             await this.runTestCommands()
 
-            await this.readAndSubscribe('/area/status', function(subscribeResponse) {
+            await this.readAndSubscribe('/area/status', function (subscribeResponse) {
                 logging.debug('area update response: ' + JSON.stringify(subscribeResponse))
                 const results = filterResponseArray(subscribeResponse, 'AreaStatuses', 1, [])
                 results.forEach(result => {
@@ -197,7 +204,7 @@ export class LutronLeap  {
                 })
             })
 
-            await this.readAndSubscribe('/zone/status', function(subscribeResponse) {
+            await this.readAndSubscribe('/zone/status', function (subscribeResponse) {
                 logging.debug('zone update response: ' + JSON.stringify(subscribeResponse))
                 const results = filterResponseArray(subscribeResponse, 'ZoneStatuses', 1, ['Zone'])
                 results.forEach(result => {
@@ -211,6 +218,7 @@ export class LutronLeap  {
 
             leap.on('disconnected', () => {
                 emitter.emit('disconnected')
+                logging.error('disconnected')
                 connected = false
             })
 

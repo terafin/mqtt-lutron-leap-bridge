@@ -10,6 +10,7 @@ import * as lutronLib from './lutron.js'
 const { LutronLeap } = lutronLib
 import fs from 'fs'
 import pth from "path"
+import { exit } from 'process'
 
 // Config
 const pathToBridgeKey = process.env.BRIDGE_KEY_PATH
@@ -28,21 +29,21 @@ const host = process.env.MQTT_HOST
 var topic_prefix = process.env.TOPIC_PREFIX
 
 
-const loadFileData = function(filePath) {
+const loadFileData = function (filePath) {
     logging.info('Loading file at path: ' + filePath)
     return fs.readFileSync(filePath, 'ASCII')
 }
 
 // Check basics
 if (_.isNil(bridgeIP)) {
-	logging.warn('empty BRIDGE_IP, not starting')
-	process.abort()
+    logging.warn('empty BRIDGE_IP, not starting')
+    process.abort()
 } else {
 }
 
 if (_.isNil(pathToBridgeCA)) {
-	logging.warn('empty BRIDGE_CA_PATH, not starting')
-	process.abort()
+    logging.warn('empty BRIDGE_CA_PATH, not starting')
+    process.abort()
 } else {
     bridgeCA = loadFileData(pathToBridgeCA)
     if (_.isNil(bridgeCA)) {
@@ -52,8 +53,8 @@ if (_.isNil(pathToBridgeCA)) {
 }
 
 if (_.isNil(pathToBridgeKey)) {
-	logging.warn('empty BRIDGE_KEY_PATH, not starting')
-	process.abort()
+    logging.warn('empty BRIDGE_KEY_PATH, not starting')
+    process.abort()
 } else {
     bridgeKey = loadFileData(pathToBridgeKey)
     if (_.isNil(bridgeKey)) {
@@ -63,8 +64,8 @@ if (_.isNil(pathToBridgeKey)) {
 }
 
 if (_.isNil(pathToBridgeCert)) {
-	logging.warn('empty BRIDGE_CERT_PATH, not starting')
-	process.abort()
+    logging.warn('empty BRIDGE_CERT_PATH, not starting')
+    process.abort()
 } else {
     bridgeCert = loadFileData(pathToBridgeCert)
     if (_.isNil(bridgeCert)) {
@@ -74,55 +75,55 @@ if (_.isNil(pathToBridgeCert)) {
 }
 
 if (_.isNil(host)) {
-	logging.warn('empty MQTT_HOST, not starting')
-	process.abort()
+    logging.warn('empty MQTT_HOST, not starting')
+    process.abort()
 }
 
 if (_.isNil(topic_prefix)) {
-	logging.warn('empty TOPIC_PREFIX, using /isy')
-	topic_prefix = '/leap/'
+    logging.warn('empty TOPIC_PREFIX, using /isy')
+    topic_prefix = '/leap/'
 }
 
 // Setup Lutron
-const lutron = new LutronLeap({ip: bridgeIP, ca: bridgeCA, cert: bridgeCert, key: bridgeKey})
+const lutron = new LutronLeap({ ip: bridgeIP, ca: bridgeCA, cert: bridgeCert, key: bridgeKey })
 
 
 // MQTT Event Handlers
-var connectedEvent = function() {
-	var topic = topic_prefix + '/+/+/+/set'
-	logging.info('Subscribing to topic: ' + topic)
-	client.subscribe(topic, {qos: 1})
+var connectedEvent = function () {
+    var topic = topic_prefix + '/+/+/+/set'
+    logging.info('Subscribing to topic: ' + topic)
+    client.subscribe(topic, { qos: 1 })
 
-	topic = topic_prefix + '/+/+/+/press'
-	logging.info('Subscribing to topic: ' + topic)
-	client.subscribe(topic, {qos: 1})
-	health.healthyEvent()
+    topic = topic_prefix + '/+/+/+/press'
+    logging.info('Subscribing to topic: ' + topic)
+    client.subscribe(topic, { qos: 1 })
+    health.healthyEvent()
 }
 
-var disconnectedEvent = function() {
-	logging.error('Reconnecting...')
-	health.unhealthyEvent()
+var disconnectedEvent = function () {
+    logging.error('Reconnecting...')
+    health.unhealthyEvent()
 }
 
 // Setup MQTT
 var client = mqtt_helpers.setupClient(connectedEvent, disconnectedEvent)
 
 if (_.isNil(client)) {
-	logging.warn('MQTT Client Failed to Startup')
-	process.abort()
+    logging.warn('MQTT Client Failed to Startup')
+    process.abort()
 }
 
 // MQTT Observation
 client.on('message', (topic, message) => {
-	var components = topic.split('/')
+    var components = topic.split('/')
 
     // topic_prefix/zone/NUMBER/COMMAND = VALUE
-	const scope = components[components.length - 4]
-	const number = components[components.length - 3]
-	const command = components[components.length - 2]
-	logging.info(' => topic: ' + topic + '  message: ' + message + ' scope: ' + scope + ' scope: ' + number + ' scope: ' + command)
+    const scope = components[components.length - 4]
+    const number = components[components.length - 3]
+    const command = components[components.length - 2]
+    logging.info(' => topic: ' + topic + '  message: ' + message + ' scope: ' + scope + ' scope: ' + number + ' scope: ' + command)
 
-    if ( _.isNil(scope) || _.isNil(number) || _.isNil(command) ) {
+    if (_.isNil(scope) || _.isNil(number) || _.isNil(command)) {
         logging.error('malformed MQTT command')
         return
     }
@@ -133,17 +134,17 @@ client.on('message', (topic, message) => {
                 case 'on_off':
                     lutron.sendZoneOnOffCommand(number, message == '1' ? true : false)
                     break;
-            
+
                 case 'level':
                     lutron.sendZoneLevelCommand(number, Number(message))
                     break;
-            
+
                 default:
                     logging.error('unhandled command: ' + command)
                     break;
-            }    
+            }
             break;
-    
+
         default:
             logging.error('unhandled scope: ' + scope)
             break;
@@ -157,11 +158,11 @@ lutron.lutronEvent.on('zone-status', (update) => {
     const level = update.Level
     const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'zone', device.toString())
 
-    if ( !_.isNil(switchedLevel) ) {
-	    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'on_off'), switchedLevel == 'On' ? "1" : "0", mqttOptions)
+    if (!_.isNil(switchedLevel)) {
+        client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'on_off'), switchedLevel == 'On' ? "1" : "0", mqttOptions)
     }
-    if ( !_.isNil(level) ) {
-	    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'level'), level, mqttOptions)
+    if (!_.isNil(level)) {
+        client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'level'), level, mqttOptions)
     }
 })
 
@@ -171,9 +172,9 @@ lutron.lutronEvent.on('area-status', (update) => {
     const occupancyStatus = update.OccupancyStatus
     const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'areas', device.toString())
 
-    
-    if ( !_.isNil(occupancyStatus) ) {
-	    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'occupancy'), occupancyStatus == 'Occupied' ? "1" : "0", mqttOptions)
+
+    if (!_.isNil(occupancyStatus)) {
+        client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'occupancy'), occupancyStatus == 'Occupied' ? "1" : "0", mqttOptions)
     }
 })
 
@@ -187,15 +188,60 @@ lutron.lutronEvent.on('disconnected', () => {
 })
 
 
-interval(async() => {
+lutron.on('disconnected', () => {
+    logging.info('disconnected')
+    process.exit(1)
+})
+
+
+interval(async () => {
     logging.debug('checking connection')
     await lutron.ping()
     const connected = await lutron.isConnected()
 
-    if ( !connected ) {
+    if (!connected) {
         logging.info('reconnecting, connection dead')
         lutron.connect()
     } else {
         logging.debug('already connected')
     }
 }, 1000 * 10)
+
+const filterResponse = function (response, bodyKey, nodeIndex, exclude) {
+    var item = response.Body[bodyKey]
+    var result = {}
+
+    Object.keys(item).forEach(key => {
+        if (key == 'href') {
+            const components = item[key].trim().split('/')
+            result['device'] = components[1]
+        } else if (_.isNil(exclude)) {
+            // logging.info('nil exclude, skipping')
+            return;
+        } else if (exclude.size == 0) {
+            // logging.info('empty exclude, skipping')
+            return;
+        } else if (exclude.includes(key)) {
+            // logging.info('key excluded, skipping')
+            return;
+        } else if (!_.isNil(item[key])) {
+            result[key] = item[key]
+        }
+    })
+
+    return result
+}
+
+interval(async () => {
+    const connected = await lutron.isConnected()
+
+    if (connected) {
+        await lutron.read('/zone/2887/status', function (readResponse) {
+            logging.info('guest bedroom update response: ' + JSON.stringify(readResponse))
+            const result = filterResponse(readResponse, 'ZoneStatus', 1, ['Zone'])
+            lutron.lutronEvent.emit('zone-status', result)
+        })
+    }
+}, 100)
+
+
