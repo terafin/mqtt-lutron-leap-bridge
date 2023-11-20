@@ -79,14 +79,42 @@ export class LutronLeap {
     }
 
     async read(path, responseProcessor) {
-        const result = await leap.request('ReadRequest', path)
-        responseProcessor(result)
+        var result = null
+
+        try {
+            result = await leap.request('ReadRequest', path)
+            responseProcessor(result)
+        } catch (error) {
+            logging.error('read failed: ' + error)
+        }
+
+        return result
     }
 
     async readAndSubscribe(path, responseProcessor) {
-        const result = await leap.request('ReadRequest', path)
-        responseProcessor(result)
-        leap.subscribe(path, responseProcessor, 'SubscribeRequest')
+        var result = null
+
+        try {
+            result = await leap.request('ReadRequest', path)
+            responseProcessor(result)
+            leap.subscribe(path, responseProcessor, 'SubscribeRequest')
+        } catch (error) {
+            logging.error('subscribe failed: ' + error)
+        }
+
+        return result
+    }
+
+    async subscribe(path, responseProcessor) {
+        var result = null
+
+        try {
+            leap.subscribe(path, responseProcessor, 'SubscribeRequest')
+        } catch (error) {
+            logging.error('subscribe failed: ' + error)
+        }
+
+        return result
     }
 
     async isConnected() {
@@ -110,6 +138,13 @@ export class LutronLeap {
         // await this.testCommandAndLog('ReadRequest', '/area/3') // Home
         // await this.testCommandAndLog('ReadRequest', '/area/729/status') // Occupied status of loft
         // await this.testCommandAndLog('ReadRequest', '/zone')
+
+        // await self._load_ra3_processor()
+        // await self._load_ra3_devices()
+        // await self._subscribe_to_button_status()
+        // await self._load_ra3_occupancy_groups()
+        // await self._subscribe_to_ra3_occupancy_groups()
+
         // await this.testCommandAndLog('ReadRequest', '/zone/622') // loft zone
         // await this.testCommandAndLog('ReadRequest', '/zone/622/status') // Status of a zone
         // await this.testCommandAndLog('ReadRequest', '/controlstation/613') // switch control
@@ -179,6 +214,13 @@ export class LutronLeap {
         return success
     }
 
+    async subscribe(path) {
+        logging.info('subscribing to ' + path)
+        leap.subscribe(path, function (subscribeResponse) {
+            logging.info(path + subscribe + ' response: ' + JSON.stringify(subscribeResponse))
+        }, 'SubscribeRequest')
+    }
+
     async connect() {
         if (connected) {
             return
@@ -196,7 +238,7 @@ export class LutronLeap {
 
             await this.runTestCommands()
 
-            await this.readAndSubscribe('/area/status', function (subscribeResponse) {
+            this.readAndSubscribe('/area/status', function (subscribeResponse) {
                 logging.debug('area update response: ' + JSON.stringify(subscribeResponse))
                 const results = filterResponseArray(subscribeResponse, 'AreaStatuses', 1, [])
                 results.forEach(result => {
@@ -204,7 +246,33 @@ export class LutronLeap {
                 })
             })
 
-            await this.readAndSubscribe('/zone/status', function (subscribeResponse) {
+            // this.subscribe('/status/event', function (subscribeResponse) {
+            //     logging.info('**** status event subscribe response: ' + JSON.stringify(subscribeResponse))
+            //     // const results = filterResponseArray(subscribeResponse, 'AreaStatuses', 1, [])
+            //     // results.forEach(result => {
+            //     //     emitter.emit('area-status', result)
+            //     // })
+            // })
+
+            // this.read('/device?where=IsThisDevice:true', function (subscribeResponse) {
+            //     const body = subscribeResponse.Body
+            //     logging.info('***** IsThisDevice? response: ' + JSON.stringify(body))
+            //     // const results = filterResponseArray(subscribeResponse, 'ZoneStatuses', 1, ['Zone'])
+            //     // results.forEach(result => {
+            //     //     emitter.emit('body', result)
+            //     // })
+            // })
+
+            // this.read('/virtualbutton', function (response) {
+            //     const body = response.Body
+            //     logging.info('virtualbutton response: ' + JSON.stringify(body))
+            //     // const results = filterResponseArray(subscribeResponse, 'ZoneStatuses', 1, ['Zone'])
+            //     // results.forEach(result => {
+            //     //     emitter.emit('body', result)
+            //     // })
+            // })
+
+            this.readAndSubscribe('/zone/status', function (subscribeResponse) {
                 logging.debug('zone update response: ' + JSON.stringify(subscribeResponse))
                 const results = filterResponseArray(subscribeResponse, 'ZoneStatuses', 1, ['Zone'])
                 results.forEach(result => {
@@ -221,6 +289,9 @@ export class LutronLeap {
                 logging.error('disconnected')
                 connected = false
             })
+
+            emitter.emit('connected')
+
 
         } catch (error) {
             logging.error('error: ' + error)

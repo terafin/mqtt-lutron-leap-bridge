@@ -154,6 +154,10 @@ client.on('message', (topic, message) => {
 lutron.lutronEvent.on('zone-status', (update) => {
     logging.info('zone-status: ' + JSON.stringify(update))
     const device = update.device
+
+    if (_.isNil(device))
+        return
+
     const switchedLevel = update.SwitchedLevel
     const level = update.Level
     const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'zone', device.toString())
@@ -185,12 +189,13 @@ lutron.lutronEvent.on('unsolicited', (update) => {
 
 lutron.lutronEvent.on('disconnected', () => {
     logging.info('disconnected')
+    process.exit(1)
 })
 
 
-lutron.on('disconnected', () => {
-    logging.info('disconnected')
-    process.exit(1)
+lutron.lutronEvent.on('connected', () => {
+    logging.info('connected')
+    setupSubscriptions()
 })
 
 
@@ -211,24 +216,27 @@ const filterResponse = function (response, bodyKey, nodeIndex, exclude) {
     var item = response.Body[bodyKey]
     var result = {}
 
-    Object.keys(item).forEach(key => {
-        if (key == 'href') {
-            const components = item[key].trim().split('/')
-            result['device'] = components[1]
-        } else if (_.isNil(exclude)) {
-            // logging.info('nil exclude, skipping')
-            return;
-        } else if (exclude.size == 0) {
-            // logging.info('empty exclude, skipping')
-            return;
-        } else if (exclude.includes(key)) {
-            // logging.info('key excluded, skipping')
-            return;
-        } else if (!_.isNil(item[key])) {
-            result[key] = item[key]
-        }
-    })
+    // logging.info('item: ' + JSON.stringify(item))
 
+    if (!_.isNil(item)) {
+        Object.keys(item).forEach(key => {
+            if (key == 'href') {
+                const components = item[key].trim().split('/')
+                result['device'] = components[1]
+            } else if (_.isNil(exclude)) {
+                // logging.info('nil exclude, skipping')
+                return;
+            } else if (exclude.size == 0) {
+                // logging.info('empty exclude, skipping')
+                return;
+            } else if (exclude.includes(key)) {
+                // logging.info('key excluded, skipping')
+                return;
+            } else if (!_.isNil(item[key])) {
+                result[key] = item[key]
+            }
+        })
+    }
     return result
 }
 
@@ -236,12 +244,25 @@ interval(async () => {
     const connected = await lutron.isConnected()
 
     if (connected) {
-        await lutron.read('/zone/2887/status', function (readResponse) {
-            logging.info('guest bedroom update response: ' + JSON.stringify(readResponse))
-            const result = filterResponse(readResponse, 'ZoneStatus', 1, ['Zone'])
-            lutron.lutronEvent.emit('zone-status', result)
-        })
+        // await lutron.read('/zone/2887/status', function (readResponse) {
+        //     logging.info('guest bedroom update response: ' + JSON.stringify(readResponse))
+        //     const result = filterResponse(readResponse, 'ZoneStatus', 1, ['Zone'])
+        //     lutron.lutronEvent.emit('zone-status', result)
+        // })
     }
 }, 100)
+
+
+const setupSubscriptions = function () {
+    // lutron.subscribe('/occupancygroup/status')
+
+    // lutron.read('/led/4282/status', function (subscribeResponse) {
+    //     logging.info('***** led status response: ' + JSON.stringify(subscribeResponse))
+    //     // const results = filterResponseArray(subscribeResponse, 'LEDStatuses', 1, [])
+    //     // results.forEach(result => {
+    //     //     emitter.emit('led-status', result)
+    //     // })
+    // })
+}
 
 
