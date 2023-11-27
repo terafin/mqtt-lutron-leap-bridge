@@ -93,7 +93,7 @@ var connectedEvent = function () {
     logging.info('Subscribing to topic: ' + topic)
     client.subscribe(topic, { qos: 1 })
 
-    topic = topic_prefix + '/+/+/+/press'
+    topic = topic_prefix + '/button/+/press'
     logging.info('Subscribing to topic: ' + topic)
     client.subscribe(topic, { qos: 1 })
     health.healthyEvent()
@@ -115,38 +115,44 @@ if (_.isNil(client)) {
 // MQTT Observation
 client.on('message', (topic, message) => {
     var components = topic.split('/')
+    logging.info(' => topic: ' + topic + '  message: ' + message)
 
     // topic_prefix/zone/NUMBER/COMMAND = VALUE
-    const scope = components[components.length - 4]
-    const number = components[components.length - 3]
-    const command = components[components.length - 2]
-    logging.info(' => topic: ' + topic + '  message: ' + message + ' scope: ' + scope + ' scope: ' + number + ' scope: ' + command)
+    if (topic.includes('set')) {
+        const scope = components[components.length - 4]
+        const number = components[components.length - 3]
+        const command = components[components.length - 2]
+        logging.info(' => topic: ' + topic + '  message: ' + message + ' scope: ' + scope + ' scope: ' + number + ' scope: ' + command)
 
-    if (_.isNil(scope) || _.isNil(number) || _.isNil(command)) {
-        logging.error('malformed MQTT command')
-        return
-    }
+        if (_.isNil(scope) || _.isNil(number) || _.isNil(command)) {
+            logging.error('malformed MQTT command')
+            return
+        }
 
-    switch (scope) {
-        case 'zone':
-            switch (command) {
-                case 'on_off':
-                    lutron.sendZoneOnOffCommand(number, message == '1' ? true : false)
-                    break;
+        switch (scope) {
+            case 'zone':
+                switch (command) {
+                    case 'on_off':
+                        lutron.sendZoneOnOffCommand(number, message == '1' ? true : false)
+                        break;
 
-                case 'level':
-                    lutron.sendZoneLevelCommand(number, Number(message))
-                    break;
+                    case 'level':
+                        lutron.sendZoneLevelCommand(number, Number(message))
+                        break;
 
-                default:
-                    logging.error('unhandled command: ' + command)
-                    break;
-            }
-            break;
-
-        default:
-            logging.error('unhandled scope: ' + scope)
-            break;
+                    default:
+                        logging.error('unhandled command: ' + command)
+                        break;
+                }
+                break;
+            default:
+                logging.error('unhandled scope: ' + scope)
+                break;
+        }
+    } else if (topic.includes('press')) {
+        const number = components[components.length - 2]
+        logging.info(' => button press: ' + number)
+        lutron.sendButtonPress(number)
     }
 })
 

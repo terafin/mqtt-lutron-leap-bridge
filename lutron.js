@@ -68,6 +68,15 @@ export class LutronLeap {
         return this.sendZoneLevelCommand(zone, onOff ? 100 : 0)
     }
 
+    async sendButtonPress(button) {
+        var response = await leap.request('CreateRequest', '/button/' + button + '/commandprocessor', {
+            "Command": {
+                "CommandType": "PressAndRelease"
+            }
+        })
+        logging.info('command response: ' + JSON.stringify(response))
+    }
+
     async sendZoneLevelCommand(zone, level) {
         var response = await leap.request('CreateRequest', '/zone/' + zone + '/commandprocessor', {
             "Command": {
