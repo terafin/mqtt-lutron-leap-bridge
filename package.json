@@ -12,10 +12,10 @@
         "start": "node mqtt-lutron-leap-bridge.js"
     },
     "dependencies": {
+        "@terafin2/lutron-leap": "^3.4.2",
         "homeautomation-js-lib": "terafin/homeautomation-js-lib",
-        "lodash": "latest",
-        "lutron-leap": "latest",
         "interval-promise": "latest",
+        "lodash": "latest",
         "mqtt": "latest"
     },
     "engines": {

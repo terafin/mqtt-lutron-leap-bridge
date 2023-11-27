@@ -28,7 +28,6 @@ var bridgeCert = null
 const host = process.env.MQTT_HOST
 var topic_prefix = process.env.TOPIC_PREFIX
 
-
 const loadFileData = function (filePath) {
     logging.info('Loading file at path: ' + filePath)
     return fs.readFileSync(filePath, 'ASCII')
@@ -182,6 +181,20 @@ lutron.lutronEvent.on('area-status', (update) => {
     }
 })
 
+lutron.lutronEvent.on('led-status', (led, status) => {
+    logging.info('led-status: ' + led + '   status: ' + status)
+    const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'led', led.toString())
+
+    client.smartPublish(mqtt_helpers.generateTopic(deviceTopic), status == 1 ? "1" : "0", mqttOptions)
+    // const occupancyStatus = update.OccupancyStatus
+    // const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'areas', device.toString())
+
+
+    // if (!_.isNil(occupancyStatus)) {
+    //     client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'occupancy'), occupancyStatus == 'Occupied' ? "1" : "0", mqttOptions)
+    // }
+})
+
 lutron.lutronEvent.on('unsolicited', (update) => {
     logging.info('unsolicited: ' + JSON.stringify(update))
 })
@@ -244,25 +257,14 @@ interval(async () => {
     const connected = await lutron.isConnected()
 
     if (connected) {
-        // await lutron.read('/zone/2887/status', function (readResponse) {
-        //     logging.info('guest bedroom update response: ' + JSON.stringify(readResponse))
-        //     const result = filterResponse(readResponse, 'ZoneStatus', 1, ['Zone'])
-        //     lutron.lutronEvent.emit('zone-status', result)
-        // })
+        // Insert ping response here
     }
 }, 100)
 
 
-const setupSubscriptions = function () {
-    // lutron.subscribe('/occupancygroup/status')
 
-    // lutron.read('/led/4282/status', function (subscribeResponse) {
-    //     logging.info('***** led status response: ' + JSON.stringify(subscribeResponse))
-    //     // const results = filterResponseArray(subscribeResponse, 'LEDStatuses', 1, [])
-    //     // results.forEach(result => {
-    //     //     emitter.emit('led-status', result)
-    //     // })
-    // })
+const setupSubscriptions = function () {
+
 }
 
 

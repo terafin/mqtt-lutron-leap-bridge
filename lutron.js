@@ -1,4 +1,4 @@
-import pkg from 'lutron-leap'
+import pkg from '@terafin2/lutron-leap'
 const { Device, LeapClient, OneDeviceStatus, Response, SmartBridge } = pkg
 import { EventEmitter } from 'events'
 
@@ -11,7 +11,7 @@ var connected = false
 var emitter = new events.EventEmitter()
 var leap = null
 var bridge = null
-
+var allLEDs = []
 
 
 const filterResponseArray = function (response, bodyKey, nodeIndex, exclude) {
@@ -109,6 +109,7 @@ export class LutronLeap {
         var result = null
 
         try {
+            logging.info('subscribing to path: ' + path)
             leap.subscribe(path, responseProcessor, 'SubscribeRequest')
         } catch (error) {
             logging.error('subscribe failed: ' + error)
@@ -122,83 +123,6 @@ export class LutronLeap {
     }
 
     async runTestCommands() {
-        // await this.testCommandAndLog('ReadRequest', '/server/1/status/ping')
-        // await this.testCommandAndLog('ReadRequest', '/area/24')
-        // await this.testCommandAndLog('ReadRequest', '/area')
-        // await this.testCommandAndLog('ReadRequest', '/areascene/734') // area scene
-        // await this.testCommandAndLog('ReadRequest', '/preset/734') // preset scene
-        // await this.testCommandAndLog('ReadRequest', '/device/615') // switch
-        // await this.testCommandAndLog('ReadRequest', '/device/752') // motion
-        // await this.testCommandAndLog('ReadRequest', '/device/752/status') // motions
-        // await this.testCommandAndLog('ReadRequest', '/link')
-        // await this.testCommandAndLog('ReadRequest', '/devifce/status')
-        // await this.testCommandAndLog('ReadRequest', '/area/729') // loft
-        // await this.testCommandAndLog('ReadRequest', '/area/24') // loft
-        // await this.testCommandAndLog('ReadRequest', '/area/83') // Equuipmnent room
-        // await this.testCommandAndLog('ReadRequest', '/area/3') // Home
-        // await this.testCommandAndLog('ReadRequest', '/area/729/status') // Occupied status of loft
-        // await this.testCommandAndLog('ReadRequest', '/zone')
-
-        // await self._load_ra3_processor()
-        // await self._load_ra3_devices()
-        // await self._subscribe_to_button_status()
-        // await self._load_ra3_occupancy_groups()
-        // await self._subscribe_to_ra3_occupancy_groups()
-
-        // await this.testCommandAndLog('ReadRequest', '/zone/622') // loft zone
-        // await this.testCommandAndLog('ReadRequest', '/zone/622/status') // Status of a zone
-        // await this.testCommandAndLog('ReadRequest', '/controlstation/613') // switch control
-        // await this.testCommandAndLog('ReadRequest', '/controlstation/750') // motion control
-        // await this.testCommandAndLog('ReadRequest', '/device/615/linknode/617')
-        // await this.testCommandAndLog('ReadRequest', '/link/98')
-        // await this.testCommandAndLog('ReadRequest', '/device/96') // Processor
-        // await this.testCommandAndLog('ReadRequest', '/project')
-        // zone is /zone/622 area is /area/729
-        // this.testCommandAndLog('ReadRequest', '/controlstation/613')
-        // var response = await leap.request('ReadResponse', '/device/615/status')
-        // logging.info('command response: ' + JSON.stringify(response))
-        // leap.subscribe('/occupancygroup/status', function(subscribeResponse) {
-        //     logging.info('occupancy subscribe response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        // leap.subscribe('/occupancygroup/event', function(subscribeResponse) {
-        //     logging.info('occupancy subscribe response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        // leap.subscribe('/areascene/status', function(subscribeResponse) { 
-        //     logging.info('areascene subscribe response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        // leap.subscribe('/controlstation/750/event', function(subscribeResponse) {
-        //     logging.info('controlstation subscribe response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        // leap.subscribe('/project/status', function(subscribeResponse) {
-        //     logging.info('project subscribe response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        // leap.subscribe('/device/752', function(subscribeResponse) {
-        //     logging.info('device subscribe response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        // leap.subscribe('/area/729', function(subscribeResponse) {
-        //     logging.info('area subscribe response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        // leap.subscribe('/controlstation/613', function(subscribeResponse) {
-        //     logging.info('controlstation subscribe response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        // leap.subscribe('/device/615', function(subscribeResponse) {
-        //     logging.info('subscribe response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        // leap.subscribe('/device/status/deviceheard', function(subscribeResponse) {
-        //     logging.info('deviceheard response: ' + subscribeResponse)
-        // }, 'SubscribeRequest')
-        //    await this.sendZoneOnOffCommand(622, false)
-        //     var response = await leap.request('CreateRequest', '/zone/622/commandprocessor', {"Command": {   "CommandType": "GoToLevel", 
-        //                                                                                 "Parameter": [{"Type":"Level", "Value":0}]
-        //                                                                             }
-        //                                                                 })
-        //    logging.info('command response: ' + JSON.stringify(response))
-
-
-        // const bridgeInfo = await bridge.getBridgeInfo()
-        // logging.info('bridge info: ' + JSON.stringify(bridgeInfo))
-        // const deviceInfo = await bridge.getDeviceInfo()
-        // logging.info('device info: ' + JSON.stringify(deviceInfo))
     }
 
     async ping() {
@@ -212,13 +136,6 @@ export class LutronLeap {
         }
 
         return success
-    }
-
-    async subscribe(path) {
-        logging.info('subscribing to ' + path)
-        leap.subscribe(path, function (subscribeResponse) {
-            logging.info(path + subscribe + ' response: ' + JSON.stringify(subscribeResponse))
-        }, 'SubscribeRequest')
     }
 
     async connect() {
@@ -246,32 +163,6 @@ export class LutronLeap {
                 })
             })
 
-            // this.subscribe('/status/event', function (subscribeResponse) {
-            //     logging.info('**** status event subscribe response: ' + JSON.stringify(subscribeResponse))
-            //     // const results = filterResponseArray(subscribeResponse, 'AreaStatuses', 1, [])
-            //     // results.forEach(result => {
-            //     //     emitter.emit('area-status', result)
-            //     // })
-            // })
-
-            // this.read('/device?where=IsThisDevice:true', function (subscribeResponse) {
-            //     const body = subscribeResponse.Body
-            //     logging.info('***** IsThisDevice? response: ' + JSON.stringify(body))
-            //     // const results = filterResponseArray(subscribeResponse, 'ZoneStatuses', 1, ['Zone'])
-            //     // results.forEach(result => {
-            //     //     emitter.emit('body', result)
-            //     // })
-            // })
-
-            // this.read('/virtualbutton', function (response) {
-            //     const body = response.Body
-            //     logging.info('virtualbutton response: ' + JSON.stringify(body))
-            //     // const results = filterResponseArray(subscribeResponse, 'ZoneStatuses', 1, ['Zone'])
-            //     // results.forEach(result => {
-            //     //     emitter.emit('body', result)
-            //     // })
-            // })
-
             this.readAndSubscribe('/zone/status', function (subscribeResponse) {
                 logging.debug('zone update response: ' + JSON.stringify(subscribeResponse))
                 const results = filterResponseArray(subscribeResponse, 'ZoneStatuses', 1, ['Zone'])
@@ -292,11 +183,93 @@ export class LutronLeap {
 
             emitter.emit('connected')
 
+            this.loadAreas()
+
+            var that = this
+            setTimeout(function () {
+                logging.info('Subscribing to LEDs: ' + JSON.stringify(allLEDs))
+                allLEDs.forEach(ledID => {
+                    that.readAndSubscribe('/led/' + ledID + '/status', function (subscribeResponse) {
+                        const result = subscribeResponse.Body['LEDStatus'].State == 'On' ? '1' : '0'
+
+                        emitter.emit('led-status', ledID, result)
+                    })
+                });
+            }, 5 * 1000);
 
         } catch (error) {
             logging.error('error: ' + error)
             connected = false
         }
+    }
+
+    async loadAreas() {
+        const that = this
+        this.read('/area', function (response) {
+            logging.debug('***** area response: ' + JSON.stringify(response))
+            response.Body.Areas.forEach(area => {
+                logging.debug('   area: ' + JSON.stringify(area))
+
+                const areaId = area.href.split('/')[2]
+                logging.debug('areaId: ' + areaId)
+                that.read('/area/' + areaId + '/associatedcontrolstation', function (response) {
+                    const controlStations = response.Body
+                    logging.debug('***** control station response: ' + JSON.stringify(controlStations))
+                    if (!_.isNil(controlStations)) {
+                        controlStations.ControlStations.forEach(station => {
+                            logging.debug('station: ' + JSON.stringify(station))
+                            const associatedGangDevices = station.AssociatedGangedDevices
+                            if (!_.isNil(associatedGangDevices)) {
+                                associatedGangDevices.forEach(gangDevice => {
+                                    logging.debug('gangDevice: ' + JSON.stringify(gangDevice))
+                                    const gangDeviceId = gangDevice.Device.href.split('/')[2]
+                                    logging.debug('gangDeviceId: ' + gangDeviceId)
+
+                                    that.read('/device/' + gangDeviceId, function (response) {
+                                        const deviceJSON = response.Body
+                                        logging.debug('***** deviceJSON: ' + JSON.stringify(deviceJSON))
+
+                                    })
+
+                                    that.read('/device/' + gangDeviceId + '/buttongroup/expanded', function (response) {
+                                        logging.debug('!!!************* buttonGroupJSON: ' + JSON.stringify(response))
+                                        if (!_.isNil(response.Body)) {
+                                            const buttonGroupJSON = response.Body
+                                            const buttonGroup = buttonGroupJSON.ButtonGroupsExpanded
+
+                                            if (!_.isNil(buttonGroup)) {
+                                                buttonGroup.forEach(group => {
+                                                    logging.debug('group: ' + JSON.stringify(group))
+                                                    group.Buttons.forEach(button => {
+                                                        logging.debug('button: ' + JSON.stringify(button))
+
+                                                        const buttonDeviceID = button.href.split('/')[2]
+                                                        logging.debug('buttonDeviceID: ' + buttonDeviceID)
+                                                        logging.debug('buttonName: ' + button.Name)
+
+                                                        if (!_.isNil(button['AssociatedLED'])) {
+                                                            const ledID = button.AssociatedLED.href.split('/')[2]
+                                                            logging.debug('ledID: ' + ledID)
+                                                            allLEDs.push(ledID)
+                                                        } else {
+                                                            logging.debug('no associated LED')
+                                                        }
+
+                                                        if (!_.isNil(button['Engraving'])) {
+                                                            logging.debug('engraving: ' + button.Engraving.Text)
+                                                        }
+                                                    });
+                                                });
+                                            }
+                                        }
+                                    })
+                                })
+                            }
+                        })
+                    }
+                })
+            })
+        })
     }
 
     secrets() {
