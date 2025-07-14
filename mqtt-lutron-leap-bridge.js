@@ -14,7 +14,6 @@ import { exit } from 'process'
 
 // Config
 const pathToBridgeKey = process.env.BRIDGE_KEY_PATH
-
 const pathToBridgeCA = process.env.BRIDGE_CA_PATH
 const pathToBridgeCert = process.env.BRIDGE_CERT_PATH
 
@@ -79,12 +78,12 @@ if (_.isNil(host)) {
 }
 
 if (_.isNil(topic_prefix)) {
-    logging.warn('empty TOPIC_PREFIX, using /isy')
+    logging.warn('empty TOPIC_PREFIX, using /leap/')
     topic_prefix = '/leap/'
 }
 
 // Setup Lutron
-const lutron = new LutronLeap({ ip: bridgeIP, ca: bridgeCA, cert: bridgeCert, key: bridgeKey })
+const lutron = new LutronLeap({ ip: bridgeIP, ca: bridgeCA, crt: bridgeCert, key: bridgeKey })
 
 
 // MQTT Event Handlers
@@ -122,7 +121,7 @@ client.on('message', (topic, message) => {
         const scope = components[components.length - 4]
         const number = components[components.length - 3]
         const command = components[components.length - 2]
-        logging.info(' => topic: ' + topic + '  message: ' + message + ' scope: ' + scope + ' scope: ' + number + ' scope: ' + command)
+        logging.info(' => topic: ' + topic + '  message: ' + message + ' scope: ' + scope + ' number: ' + number + ' command: ' + command)
 
         if (_.isNil(scope) || _.isNil(number) || _.isNil(command)) {
             logging.error('malformed MQTT command')
@@ -192,13 +191,6 @@ lutron.lutronEvent.on('led-status', (led, status) => {
     const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'led', led.toString())
 
     client.smartPublish(mqtt_helpers.generateTopic(deviceTopic), status == 1 ? "1" : "0", mqttOptions)
-    // const occupancyStatus = update.OccupancyStatus
-    // const deviceTopic = mqtt_helpers.generateTopic(topic_prefix, 'areas', device.toString())
-
-
-    // if (!_.isNil(occupancyStatus)) {
-    //     client.smartPublish(mqtt_helpers.generateTopic(deviceTopic, 'occupancy'), occupancyStatus == 'Occupied' ? "1" : "0", mqttOptions)
-    // }
 })
 
 lutron.lutronEvent.on('unsolicited', (update) => {
