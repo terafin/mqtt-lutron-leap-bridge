@@ -155,7 +155,7 @@ export class LutronLeap {
         try {
             const secrets = this.secrets()
             logging.info('Setting up LeapClient to IP: ' + secrets.ip)
-            leap = new LeapClient(secrets.ip, 8081, secrets.cert, secrets.key, secrets.ca)
+            leap = new LeapClient(secrets.ip, 8081, secrets.ca, secrets.key, secrets.cert)
 
             await leap.connect()
             connected = true
